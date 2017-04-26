@@ -9,7 +9,7 @@ Parameters:
     - stage
   VPCId:
     Type: String
-    Value: vpc-e5d4fc81
+    Default: vpc-e5d4fc81
 
 Resources:
   Role:
