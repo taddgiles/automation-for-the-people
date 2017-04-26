@@ -46,13 +46,13 @@ Resources:
         ResourceName: AWSEBSecurityGroup
         Namespace: "aws:ec2:vpc"
         Value: !Ref VPCId
-        - OptionName: ELBSubnets
-          Namespace: "aws:ec2:vpc"
-          Value: !Join [ ",", !Ref Subnets ]
-        - OptionName: Subnets
-          ResourceName: AWSEBAutoScalingGroup
-          Namespace: "aws:ec2:vpc"
-          Value: !Join [ ",", !Ref Subnets ]
+      - OptionName: ELBSubnets
+        Namespace: "aws:ec2:vpc"
+        Value: !Join [ ",", !Ref Subnets ]
+      - OptionName: Subnets
+        ResourceName: AWSEBAutoScalingGroup
+        Namespace: "aws:ec2:vpc"
+        Value: !Join [ ",", !Ref Subnets ]
 
 Outputs:
   EnvironmentName:
