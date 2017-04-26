@@ -129,18 +129,6 @@ Resources:
           OutputArtifacts:
           - Name: Stage
           RunOrder: 1
-        - Name: DeployApplicationStageAction
-          ActionTypeId:
-            Category: Deploy
-            Owner: AWS
-            Provider: ElasticBeanstalk
-            Version: 1
-          Configuration:
-            ApplicationName: 'automation-for-the-people'
-            EnvironmentName: 'automation-for-the-people-stage'
-          InputArtifacts:
-          - Name: Zip
-          RunOrder: 2
       - Name: DeployEnvironmentProd
         Actions:
         - Name: DeployEnvironmentProdAction
@@ -162,15 +150,3 @@ Resources:
           OutputArtifacts:
           - Name: Prod
           RunOrder: 1
-        - Name: DeployApplicationProdAction
-          ActionTypeId:
-            Category: Deploy
-            Owner: AWS
-            Provider: ElasticBeanstalk
-            Version: 1
-          Configuration:
-            ApplicationName: 'automation-for-the-people'
-            EnvironmentName: 'automation-for-the-people-prod'
-          InputArtifacts:
-          - Name: Zip
-          RunOrder: 2
