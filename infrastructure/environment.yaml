@@ -7,6 +7,10 @@ Parameters:
     AllowedValues:
     - prod
     - stage
+  VPCId:
+    Type: String
+    Value: vpc-e5d4fc81
+
 Resources:
   Role:
     Type: 'AWS::IAM::Role'
@@ -35,6 +39,11 @@ Resources:
       - Namespace: 'aws:autoscaling:launchconfiguration'
         OptionName: 'IamInstanceProfile'
         Value: !Ref InstanceProfile
+      - OptionName: VPCId
+        ResourceName: AWSEBSecurityGroup
+        Namespace: "aws:ec2:vpc"
+        Value: !Ref ProdVPCId
+
 Outputs:
   EnvironmentName:
     Value: !Ref Environment
