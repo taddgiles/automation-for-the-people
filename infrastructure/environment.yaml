@@ -10,6 +10,9 @@ Parameters:
   VPCId:
     Type: String
     Default: vpc-e5d4fc81
+  Subnets:
+    Type: CommaDelimitedList
+    Default: "subnet-663e0210,subnet-d0d3a988,subnet-25f9c041"
 
 Resources:
   Role:
@@ -43,6 +46,13 @@ Resources:
         ResourceName: AWSEBSecurityGroup
         Namespace: "aws:ec2:vpc"
         Value: !Ref VPCId
+        - OptionName: ELBSubnets
+          Namespace: "aws:ec2:vpc"
+          Value: !Join [ ",", !Ref Subnets ]
+        - OptionName: Subnets
+          ResourceName: AWSEBAutoScalingGroup
+          Namespace: "aws:ec2:vpc"
+          Value: !Join [ ",", !Ref Subnets ]
 
 Outputs:
   EnvironmentName:
