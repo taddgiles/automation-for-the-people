@@ -1,17 +1,20 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Pipeline'
+
 Parameters:
   GitHubUserName:
     Type: String
   GitHubOAuthToken:
     Type: String
     NoEcho: true
+
 Resources:
   ArtifactsBucket:
     DependsOn: CloudFormationRole
     DeletionPolicy: Retain
     Type: 'AWS::S3::Bucket'
+
   PipelineRole:
     DependsOn: CloudFormationRole
     Type: 'AWS::IAM::Role'
@@ -27,6 +30,7 @@ Resources:
           - 'sts:AssumeRole'
       ManagedPolicyArns:
       - 'arn:aws:iam::aws:policy/AdministratorAccess'
+
   CloudFormationRole:
     Type: 'AWS::IAM::Role'
     Properties:
@@ -41,123 +45,7 @@ Resources:
           - 'sts:AssumeRole'
       ManagedPolicyArns:
       - 'arn:aws:iam::aws:policy/AdministratorAccess'
-  SmokeTestLambdaRole:
-    DependsOn: CloudFormationRole
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - 'lambda.amazonaws.com'
-          Action:
-          - 'sts:AssumeRole'
-      Policies:
-      - PolicyName: 'codepipeline'
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-          - Effect: Allow
-            Action:
-            - codepipeline:PutJobSuccessResult
-            - codepipeline:PutJobFailureResult
-            Resource: '*'
-      ManagedPolicyArns:
-      - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-  SmokeTestLambda:
-    DependsOn: CloudFormationRole
-    Type: 'AWS::Lambda::Function'
-    Properties:
-      Code:
-        ZipFile: |
-          'use strict';
-          const crypto = require('crypto');
-          const fs = require('fs');
-          const http = require('http');
-          const exec = require('child_process').exec;
-          const AWS = require('aws-sdk');
-          AWS.config.setPromisesDependency(null);
-          const codepipeline = new AWS.CodePipeline();
-          function success(jobId) {
-            return codepipeline.putJobSuccessResult({
-              jobId: jobId
-            }).promise();
-          }
-          function failure(jobId, err) {
-            return codepipeline.putJobFailureResult({
-              failureDetails: {
-                message: `${err.message}: ${err.stack}`,
-                type: 'JobFailed'
-              },
-              jobId: jobId
-            }).promise();
-          }
-          function cmd(command, options) {
-            return new Promise(function(resolve, reject) {
-              exec(command, options, (err, stdout, stderr) => {
-                console.log(command);
-                console.log(`stderr: ${stderr.toString('utf8')}`);
-                console.log(`stdout: ${stdout.toString('utf8')}`);
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve(null);
-                }
-              });
-            });
-          }
-          function save(buffer, file, options) {
-            return new Promise(function(resolve, reject) {
-              fs.writeFile(file, buffer, options, (err) => {
-                if (err) {
-                  reject(err);
-                } else {
-                  resolve(null);
-                }
-              });
-            });
-          }
-          function smoke(config) {
-            console.log(JSON.stringify(config));
-            return new Promise(function(resolve, reject) {
-              http.get(`http://${config.EndpointURL}`, (res) => {
-                const statusCode = res.statusCode;
-                if (res.statusCode === 200) {
-                  resolve();
-                } else {
-                  reject(new Error(`received unexpected status code: ${res.statusCode}`))
-                }
-              }).on('error', (err) => reject(err));
-            });
-          }
-          exports.handler = (event, context, cb) => {
-            console.log(JSON.stringify(event));
-            const job = event['CodePipeline.job'];
-            const artifact = job.data.inputArtifacts.find((artifact) => artifact.name === 'Stage');
-            const tmp = `artifact-${crypto.randomBytes(32).toString('hex')}`;
-            const s3 = new AWS.S3({signatureVersion: 'v4', region: 'eu-west-1', accessKeyId: job.data.artifactCredentials.accessKeyId, secretAccessKey: job.data.artifactCredentials.secretAccessKey, sessionToken: job.data.artifactCredentials.sessionToken});
-            s3.getObject({
-              Bucket: artifact.location.s3Location.bucketName,
-              Key: artifact.location.s3Location.objectKey
-            }).promise()
-              .then((res) => save(res.Body, `/tmp/${tmp}.zip`))
-              .then(() => cmd(`mkdir /tmp/${tmp}`))
-              .then(() => cmd(`unzip /tmp/${tmp}.zip -d /tmp/${tmp}`))
-              .then(() => smoke(require(`/tmp/${tmp}/infrastructure/output-environment-stage.json`)))
-              .then(() => success(job.id))
-              .catch((err) => failure(job.id, err))
-              .then(() => cmd(`rm -rf /tmp/${tmp}.zip`))
-              .then(() => cmd(`rm -rf /tmp/${tmp}`))
-              .then(() => cb())
-              .catch((err) => cb(err));
-          };
-      Handler: 'index.handler'
-      MemorySize: 128
-      Role: !Sub '${SmokeTestLambdaRole.Arn}'
-      Runtime: 'nodejs4.3'
-      Timeout: 60
+
   Pipeline:
     Type: 'AWS::CodePipeline::Pipeline'
     Properties:
@@ -253,17 +141,6 @@ Resources:
           InputArtifacts:
           - Name: Zip
           RunOrder: 2
-        - Name: RunSmokeTestStageAction
-          ActionTypeId:
-            Category: Invoke
-            Owner: AWS
-            Provider: Lambda
-            Version: 1
-          Configuration:
-            FunctionName: !Ref SmokeTestLambda
-          InputArtifacts:
-          - Name: Stage
-          RunOrder: 3
       - Name: DeployEnvironmentProd
         Actions:
         - Name: DeployEnvironmentProdAction
