@@ -6,13 +6,13 @@ Parameters:
     Type: String
     AllowedValues:
     - prod
-    - stage
+    - verify
   VPCId:
     Type: String
-    Default: vpc-e5d4fc81
   Subnets:
     Type: CommaDelimitedList
-    Default: "subnet-663e0210,subnet-d0d3a988,subnet-25f9c041"
+  GitHubRepo:
+    Type: String
 
 Resources:
   Role:
@@ -35,8 +35,8 @@ Resources:
   Environment:
     Type: 'AWS::ElasticBeanstalk::Environment'
     Properties:
-      ApplicationName: 'automation-for-the-people'
-      EnvironmentName: !Sub 'automation-for-the-people-${Stage}'
+      ApplicationName:
+      EnvironmentName: !Sub ${GitHubRepo}-us-west-2-${Stage}-cf
       SolutionStackName: '64bit Amazon Linux 2016.09 v2.3.3 running PHP 7.0'
       OptionSettings:
       - Namespace: 'aws:autoscaling:launchconfiguration'
@@ -53,9 +53,6 @@ Resources:
         ResourceName: AWSEBAutoScalingGroup
         Namespace: "aws:ec2:vpc"
         Value: !Join [ ",", !Ref Subnets ]
-      - OptionName: StreamLogs
-        Namespace: "aws:elasticbeanstalk:cloudwatch:logs"
-        Value: true
 
 Outputs:
   EnvironmentName:

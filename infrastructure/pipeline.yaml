@@ -3,11 +3,11 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Pipeline'
 
 Parameters:
-  GitHubUserName:
-    Type: String
   GitHubOAuthToken:
     Type: String
     NoEcho: true
+  GitHubRepo:
+    Type: String
 
 Resources:
   ArtifactsBucket:
@@ -52,7 +52,7 @@ Resources:
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactsBucket
-      Name: 'automation-for-the-people'
+      Name: !Sub ${GitHubRepo}-infrastructure-cf
       RestartExecutionOnUpdate: true
       RoleArn: !Sub '${PipelineRole.Arn}'
       Stages:
@@ -65,16 +65,16 @@ Resources:
             Provider: GitHub
             Version: 1
           Configuration:
-            Owner: !Ref GitHubUserName
-            Repo: 'automation-for-the-people'
+            Owner: KualiCo
+            Repo: !Ref GitHubRepo
             Branch: master
             OAuthToken: !Ref GitHubOAuthToken
           OutputArtifacts:
           - Name: Zip
           RunOrder: 1
-      - Name: DeployPipeline
+      - Name: UpdatePipeline
         Actions:
-        - Name: DeployPipelineAction
+        - Name: UpdateThisPipeline
           ActionTypeId:
             Category: Deploy
             Owner: AWS
@@ -101,16 +101,17 @@ Resources:
           Configuration:
             ActionMode: CREATE_UPDATE
             Capabilities: CAPABILITY_IAM
-            RoleArn: !Sub '${CloudFormationRole.Arn}'
-            StackName: 'aftp-application'
+            RoleArn: !Sub ${CloudFormationRole.Arn}
+            StackName: !Sub ${GitHubRepo}-us-west-2-app-eb
             TemplateConfiguration: 'Zip::infrastructure/application.input.json'
             TemplatePath: 'Zip::infrastructure/application.yaml'
+            ParameterOverrides: !Sub '{"GitHubRepo": "${GitHubRepo}"}'
           InputArtifacts:
           - Name: Zip
           RunOrder: 1
-      - Name: DeployEnvironmentStage
+      - Name: DeployEnvironmentVerify
         Actions:
-        - Name: DeployEnvironmentStageAction
+        - Name: DeployEnvironmentVerifyAction
           ActionTypeId:
             Category: Deploy
             Owner: AWS
@@ -120,14 +121,15 @@ Resources:
             ActionMode: CREATE_UPDATE
             Capabilities: CAPABILITY_IAM
             RoleArn: !Sub '${CloudFormationRole.Arn}'
-            StackName: 'aftp-stage'
-            OutputFileName: 'infrastructure/output-environment-stage.json'
-            TemplateConfiguration: 'Zip::infrastructure/environment-stage.input.json'
+            StackName: !Sub ${GitHubRepo}-us-west-2-verify-eb
+            OutputFileName: 'infrastructure/output-environment-verify.json'
+            TemplateConfiguration: 'Zip::infrastructure/environment-verify.input.json'
             TemplatePath: 'Zip::infrastructure/environment.yaml'
+            ParameterOverrides: !Sub '{"GitHubRepo": "${GitHubRepo}"}'
           InputArtifacts:
           - Name: Zip
           OutputArtifacts:
-          - Name: Stage
+          - Name: Verify
           RunOrder: 1
       - Name: DeployEnvironmentProd
         Actions:
@@ -140,11 +142,12 @@ Resources:
           Configuration:
             ActionMode: CREATE_UPDATE
             Capabilities: CAPABILITY_IAM
-            RoleArn: !Sub '${CloudFormationRole.Arn}'
-            StackName: 'aftp-prod'
+            RoleArn: !Sub ${CloudFormationRole.Arn}
+            StackName: !Sub ${GitHubRepo}-us-west-2-prod-eb
             OutputFileName: 'infrastructure/output-environment-prod.json'
             TemplateConfiguration: 'Zip::infrastructure/environment-prod.input.json'
             TemplatePath: 'Zip::infrastructure/environment.yaml'
+            ParameterOverrides: !Sub '{"GitHubRepo": "${GitHubRepo}"}'
           InputArtifacts:
           - Name: Zip
           OutputArtifacts:

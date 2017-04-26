@@ -1,13 +1,17 @@
 ---
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Application'
+
 Parameters:
   ArtifactsBucketName:
     Type: String
   ArtifactObjectKey:
     Type: String
+  GitHubRepo:
+    Type: String
+
 Resources:
   Application:
     Type: 'AWS::ElasticBeanstalk::Application'
     Properties:
-      ApplicationName: 'automation-for-the-people'
+      ApplicationName: !Sub ${GitHubRepo}-us-west-2-cf

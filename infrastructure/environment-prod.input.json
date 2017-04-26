@@ -1,5 +1,7 @@
 {
   "Parameters": {
-    "Stage": "prod"
+    "Stage": "prod",
+    "VPCId": "vpc-285ff94f",
+    "Subnets": "subnet-b9776fcf,subnet-a5fb3dc2,subnet-8f541bd7"
   }
 }

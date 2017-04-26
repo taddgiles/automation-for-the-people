@@ -1,0 +1,7 @@
+{
+  "Parameters": {
+    "Stage": "verify",
+    "VPCId": "vpc-cc5ff9ab",
+    "Subnets": "subnet-9dfb3dfa,subnet-48531c10,subnet-6f687019"
+  }
+}
