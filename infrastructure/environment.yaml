@@ -42,7 +42,7 @@ Resources:
       - OptionName: VPCId
         ResourceName: AWSEBSecurityGroup
         Namespace: "aws:ec2:vpc"
-        Value: !Ref ProdVPCId
+        Value: !Ref VPCId
 
 Outputs:
   EnvironmentName:
